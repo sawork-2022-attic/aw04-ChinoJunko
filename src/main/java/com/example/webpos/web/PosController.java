@@ -9,18 +9,30 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 @Controller
 public class PosController {
 
+
     private PosService posService;
 
-    private Cart cart;
-
     @Autowired
-    public void setCart(Cart cart) {
-        this.cart = cart;
+    private HttpSession session;
+
+    private Cart getCart() {
+        Cart cart = (Cart) session.getAttribute("cart");
+        if (cart == null) {
+            cart = new Cart();
+            this.saveCart(cart);
+            ;
+        }
+        return cart;
+    }
+
+    private void saveCart(Cart cart) {
+        session.setAttribute("cart", cart);
     }
 
     @Autowired
@@ -29,17 +41,18 @@ public class PosController {
     }
 
     @GetMapping("/")
-    public String pos(Model model) {
+    public String pos(Model model, HttpServletRequest httpServletRequest) {
+        httpServletRequest.getSession(true);
         model.addAttribute("products", posService.products());
-        model.addAttribute("cart", cart);
+        model.addAttribute("cart", getCart());
         return "index";
     }
 
     @GetMapping("/add")
     public String addByGet(@RequestParam(name = "pid") String pid, Model model) {
-        posService.add(cart, pid, 1);
+        posService.add(getCart(), pid, 1);
         model.addAttribute("products", posService.products());
-        model.addAttribute("cart", cart);
+        model.addAttribute("cart", getCart());
         return "index";
     }
 }
